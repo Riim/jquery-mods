@@ -1,9 +1,10 @@
 {
   "name": "jquery-mods",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/Riim/jquery-mods",
   "authors": [
-    "Dmitry Vibe <riim@yandex.ru>"
+    "Dmitry Vibe <riim@yandex.ru>",
+    "Dmitry Kuznecov (https://github.com/Diokuz)"
   ],
   "main": "jquery.mods.js",
   "license": "MIT",
