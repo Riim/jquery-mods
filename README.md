@@ -9,7 +9,8 @@ jquery-mods
 ```js
 var $el = $('<li class="list_item list_item__selected list_item__posIndex_1 list_item__anim_blink" />');
 
-console.log($el.mods()); // { selected: true, posIndex: 1, anim: 'blink' }
+console.log($el.mods());
+// => { selected: true, posIndex: 1, anim: 'blink' }
 
 $el.mods({
 	selected: undefined,
@@ -18,7 +19,8 @@ $el.mods({
     posIndex: 5
 });
 
-console.log($el[0].className); // 'list_item list_item__anim_blink list_item__hidden list_item__type_building list_item__posIndex_5'
+console.log($el[0].className);
+// => 'list_item list_item__anim_blink list_item__hidden list_item__type_building list_item__posIndex_5'
 ```
 
 ### Конфигурация
@@ -33,10 +35,9 @@ $.fn.mods.setPattern('b-{b}_e-{e}__{m}_{mv}');
 
 Можно задать набор возможных символов в именах:
 ```js
-$.fn.mods.setPattern('b-{b:[0-9a-z]}_e-{e:[0-9a-z]}__{m:\\w}_{mv\\S}');
+$.fn.mods.setPattern('b-{b:[0-9a-z]}_e-{e:[0-9a-z]}__{m:\\w}_{mv:\\S}');
 ```
-По умолчанию для блока, элемента и модификатора могут использоваться цифры, буквы и минус,
-для значения модификатора - любые непробельные символы.
+По умолчанию для блока, элемента и модификатора могут использоваться цифры и латинские буквы, для значения модификатора - любые непробельные символы.
 
 Можно сконфигурировать для использования модификаторов без привязки к блоку/элементу:
 ```js
@@ -44,11 +45,11 @@ $.fn.mods.setPattern('__{m}_{mv}');
 
 var $el = $('<div />').mods({ opened: 'yes' });
 
-console.log($el[0].className); // '__opened_yes'
+console.log($el[0].className);
+// => '__opened_yes'
 ```
 
-По умолчанию шаблон делится на четыре части. Разделение происходит после закрывающей фигурной скобки.
-Т. е. следующий шаблон `b-{b}_e-{e}__{m}_{mv}` разделится так:
+По умолчанию шаблон делится на четыре части. Разделение происходит после закрывающей фигурной скобки. Т. е. следующий шаблон `b-{b}_e-{e}__{m}_{mv}` разделится так:
 * блок - `b-{b}`;
 * элемент - `_e-{e}`;
 * модификатор - `__{m}`;
@@ -60,7 +61,8 @@ $.fn.mods.setPattern('-{b}-,{e}_,_{m}_{mv}');
 
 var $el = $('<div class="-list-" />').mods({ opened: 'yes' });
 
-console.log($el[0].className); // '-list- -list-_opened_yes'
+console.log($el[0].className);
+// => '-list- -list-_opened_yes'
 ```
 
 ### События
@@ -74,7 +76,7 @@ $(el).bind('change.mods', function(evt) {
 });
 
 $(el).mods({ selected: undefined, opened: false, disabled: true });
-// {
+// => {
 //     selected: {
 //         type: 'delete',
 //         oldValue: true,
