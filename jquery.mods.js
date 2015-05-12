@@ -1,16 +1,18 @@
-
 (function($, undef) {
 
-	var _hasOwnProperty = Array.prototype.hasOwnProperty;
+	var hasOwn = Array.prototype.hasOwnProperty;
 
 	var reNotWhitespaces = /\S+/g;
+	var reEscapableChars = /([?+|$(){}[^.\-\]\/\\*])/g;
 
 	/**
-	 * @param {string} re
+	 * @private
+	 *
+	 * @param {string} str
 	 * @returns {string}
 	 */
-	function escapeRegExp(re) {
-		return re.replace(/([?(){}[+\-\]^|$\.\/\\*])/g, '\\$1');
+	function escapeRegExp(str) {
+		return str.replace(reEscapableChars, '\\$1');
 	}
 
 	/**
@@ -38,22 +40,27 @@
 
 	var blockPrefix;
 	var blockPostfix;
-	var elementPrefix;
-	var elementPostfix;
+	var elPrefix;
+	var elPostfix;
 	var modPrefix;
 	var modPostfix;
 	var modValuePrefix;
 	var modValuePostfix;
 
-	var init;
+	var initData;
 
-	var rePattern = new RegExp([
+	var rePattern = RegExp([
 		'^',
+		//   1
 		'    (',
+		//       2                 3                 4
 		'        ([^{\\s]*)\\{b(?::([^}\\s]+))?\\}(?:([^,{\\s]*),)?',
+		//       5                 6                 7
 		'        ([^{\\s]+)\\{e(?::([^}\\s]+))?\\}(?:([^,{\\s]*),)?',
 		'    )?',
+		//   8                 9                 10
 		'    ([^{\\s]+)\\{m(?::([^}\\s]+))?\\}(?:([^,{\\s]*),)?',
+		//   11                 12             13
 		'    ([^{\\s]+)\\{mv(?::([^}\\s]+))?\\}(\\S*)',
 		'$'
 	].join('').replace(/\s+/g, ''));
@@ -70,30 +77,32 @@
 		modValuePrefix = pattern[11];
 		modValuePostfix = pattern[13] || '';
 
-		var reMod = escapeRegExp(modPrefix) + (pattern[9] ? '(' + pattern[9] + '+?)' : '([-0-9a-z]+?)') +
-			escapeRegExp(modPostfix);
-		var reModValue = escapeRegExp(modValuePrefix) + (pattern[12] ? '(' + pattern[12] + '*?)' : '(\\S*?)') +
-			escapeRegExp(modValuePostfix);
+		var reMod = escapeRegExp(modPrefix) + (pattern[9] ? '(' + pattern[9] + '+?)' : '([0-9a-z]+?)') +
+			escapeRegExp(modPostfix) + '(?:' +
+			escapeRegExp(modValuePrefix) + (pattern[12] ? '(' + pattern[12] + '*?)' : '(\\S*?)') +
+			escapeRegExp(modValuePostfix) + ')?(?=\\s)';
 
 		if (pattern[1]) {
 			blockPrefix = pattern[2];
 			blockPostfix = pattern[4] || '';
-			elementPrefix = pattern[5];
-			elementPostfix = pattern[7] || '';
+			elPrefix = pattern[5];
+			elPostfix = pattern[7] || '';
 
-			var reBlockElement = escapeRegExp(blockPrefix) +
-				(pattern[3] ? '(' + pattern[3] + '+?)' : '([-0-9a-z]+?)') + escapeRegExp(blockPostfix) +
-				'(?:' + escapeRegExp(elementPrefix) +
-				(pattern[6] ? '(' + pattern[6] + '+?)' : '([-0-9a-z]+?)') + escapeRegExp(elementPostfix) + ')?';
+			var reBlockEl = '\\s' + escapeRegExp(blockPrefix) +
+				(pattern[3] ? '(' + pattern[3] + '+?)' : '([0-9a-z]+?)') + escapeRegExp(blockPostfix) +
+				'(?:' + escapeRegExp(elPrefix) +
+				(pattern[6] ? '(' + pattern[6] + '+?)' : '([0-9a-z]+?)') + escapeRegExp(elPostfix) + ')?';
 
-			reMod = new RegExp('\\s' + reBlockElement + reMod + '(?:' + reModValue + ')?(?=\\s)', 'gi');
-			reBlockElement = new RegExp('\\s' + reBlockElement + '\\s', 'i');
+			reMod = RegExp(reBlockEl + reMod, 'gi');
 
-			init = function($el, cls) {
+			initData = function($el, cls) {
 				var block;
 				var el;
 				var mods = {};
-				var data = { mods: mods };
+				var data = {
+					mods: mods,
+					className: $el[0].className
+				};
 
 				for (var match; match = reMod.exec(cls);) {
 					if (block) {
@@ -102,7 +111,7 @@
 						}
 					} else {
 						var cl = blockPrefix + match[1] + blockPostfix +
-							(match[2] ? elementPrefix + match[2] + elementPostfix : '');
+							(match[2] ? elPrefix + match[2] + elPostfix : '');
 
 						if (cls.indexOf(' ' + cl + ' ') != -1) {
 							block = data.block = match[1];
@@ -116,10 +125,11 @@
 				}
 
 				if (!block) {
-					if (reBlockElement.test(cls)) {
-						data.block = RegExp.$1 || undef;
+					if (RegExp(reBlockEl + '\\s', 'i').test(cls)) {
+						data.block = RegExp.$1;
 						data.element = RegExp.$2 || undef;
 					} else {
+						$el.data('mods', null);
 						return null;
 					}
 				}
@@ -129,11 +139,14 @@
 				return data;
 			};
 		} else {
-			reMod = new RegExp('\\s' + reMod + '(?:' + reModValue + ')?(?=\\s)', 'gi');
+			reMod = RegExp('\\s' + reMod, 'gi');
 
-			init = function($el, cls) {
+			initData = function($el, cls) {
 				var mods = {};
-				var data = { mods: mods };
+				var data = {
+					mods: mods,
+					className: $el[0].className
+				};
 
 				for (var match; match = reMod.exec(cls);) {
 					mods[match[1]] = match[2] === undef ? true : tryStringAsNumber(match[2]);
@@ -146,7 +159,15 @@
 		}
 	}
 
-	setPattern('{b}_{e}__{m}_{mv}');
+	setPattern('{b:[-0-9a-z]}_{e:[-0-9a-z]}__{m:[-0-9a-z]}_{mv}');
+
+	function getData($el, cls) {
+		var data = $el.data('mods');
+
+		return data && data.className == $el[0].className ?
+			data :
+			initData($el, cls || ' ' + ($el[0].className.match(reNotWhitespaces) || []).join(' ') + ' ');
+	}
 
 	/**
 	 * @param {Object} [values]
@@ -157,7 +178,7 @@
 			return this.each(function() {
 				var $el = $(this);
 				var cls = ' ' + (this.className.match(reNotWhitespaces) || []).join(' ') + ' ';
-				var data = $el.data('mods') || init($el, cls);
+				var data = getData($el, cls);
 
 				if (!data) {
 					return;
@@ -170,7 +191,7 @@
 				var diff = {};
 
 				for (var name in values) {
-					var hasName = _hasOwnProperty.call(mods, name);
+					var hasName = hasOwn.call(mods, name);
 					var oldValue = hasName ? mods[name] : undef;
 					var value = values[name];
 
@@ -180,23 +201,21 @@
 							throw new TypeError('Value can\'t be a string convertible to a number');
 						}
 
-						var blockElementMod = (
-							block ? blockPrefix + block + blockPostfix +
-								(el ? elementPrefix + el + elementPostfix : '') : ''
-						) + modPrefix + name + modPostfix;
+						var blockElMod =
+							(block ? blockPrefix + block + blockPostfix + (el ? elPrefix + el + elPostfix : '') : '') +
+							modPrefix + name + modPostfix;
 
 						if (oldValue != null && oldValue !== false) {
 							cls = cls
 								.split(
-									blockElementMod +
+									blockElMod +
 										(oldValue === true ? '' : modValuePrefix + oldValue + modValuePostfix) + ' '
 								)
 								.join('');
 						}
 
 						if (value != null && value !== false) {
-							cls += blockElementMod +
-								(value === true ? '' : modValuePrefix + value + modValuePostfix) + ' ';
+							cls += blockElMod + (value === true ? '' : modValuePrefix + value + modValuePostfix) + ' ';
 						}
 
 						if (value === undef) {
@@ -210,7 +229,7 @@
 				}
 
 				if (oldCls != cls) {
-					this.className = cls.trim();
+					this.className = data.className = cls.slice(1, -1);
 
 					$el.trigger({
 						type: 'change.mods',
@@ -221,11 +240,7 @@
 		}
 
 		if (this[0]) {
-			var $el = $(this[0]);
-			var data = $el.data('mods') ||
-				init($el, ' ' + (this[0].className.match(reNotWhitespaces) || []).join(' ') + ' ');
-
-			return data ? data.mods : {};
+			return (getData($(this[0])) || { mods: {} }).mods;
 		}
 	}
 
@@ -233,4 +248,4 @@
 
 	$.fn.mods = mods;
 
-})(jQuery);
+})(window.$ || jQuery);

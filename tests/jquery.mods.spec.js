@@ -110,7 +110,8 @@ describe('jquery.mods.js', function() {
 				.to.deep.equal({
 					block: 'testBlock',
 					element: 'testElement',
-					mods: {}
+					mods: {},
+					className: 'b-testBlock_e-testElement'
 				});
 
 			$(el).mods({ num: 5 });
@@ -134,7 +135,8 @@ describe('jquery.mods.js', function() {
 					mods: {
 						str: 'str',
 						str2: 'str2'
-					}
+					},
+					className: '-b-_e_ -b-_e_-str-_str_ -b-_e_-str2-_str2_'
 				});
 
 			$(el).mods({ bool: true, num: 5, str: 'str', str2: 'newStr2' });
@@ -157,7 +159,8 @@ describe('jquery.mods.js', function() {
 					element: 'e',
 					mods: {
 						test: true
-					}
+					},
+					className: 'b1_e b_e1 b_e b1_e__testt b_e1__testt b_e__test3 b_e__test'
 				});
 		});
 
@@ -215,6 +218,48 @@ describe('jquery.mods.js', function() {
 			});
 
 			$(el).mods({ selected: undefined, opened: false, disabled: true });
+		});
+
+		it('Обновляется, если вручную изменить className', function() {
+			$.fn.mods.setPattern('{b}_{e}__{m}_{mv}');
+
+			var el = document.createElement('div');
+			el.className = 'list_item';
+
+			$(el).mods();
+
+			expect($(el).data('mods'))
+				.to.deep.equal({
+					block: 'list',
+					element: 'item',
+					mods: {},
+					className: 'list_item'
+				});
+
+			el.className = '';
+
+			expect($(el).mods())
+				.to.deep.equal({});
+
+			expect($(el).data('mods'))
+				.to.equal(null);
+		});
+
+		it('Обновляется, если вручную изменить className (2)', function() {
+			$.fn.mods.setPattern('{b}_{e}__{m}_{mv}');
+
+			var el = document.createElement('div');
+			el.className = 'list_item';
+
+			expect($(el).mods())
+				.to.deep.equal({});
+
+			el.className += ' list_item__selected';
+
+			expect($(el).mods())
+				.to.deep.equal({
+					selected: true
+				});
 		});
 
 	});
