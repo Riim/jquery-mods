@@ -1,4 +1,4 @@
-(function($, undef) {
+;(function($, undef) {
 
 	var hasOwn = Array.prototype.hasOwnProperty;
 
